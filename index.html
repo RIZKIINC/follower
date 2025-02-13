@@ -62,7 +62,7 @@
         
         .data-time {
             font-size: 0.9rem;
-            color: #6c757d;
+            color: #f8f9fa;
             text-align: right;
         }
     </style>
@@ -87,7 +87,7 @@
                     <h5 class="mb-3"><i class="fas fa-user-circle me-2"></i>Info Akun</h5>
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-muted small">Tanggal Pembuatan</div>
+                            <div class="text-muted small">Tanggal Buat Akun</div>
                             <div class="stat-value" id="creationDate"></div>
                         </div>
                         <i class="fas fa-calendar-alt fa-2x text-secondary"></i>
@@ -158,8 +158,12 @@
             timeZone: 'Asia/Jakarta'
         };
 
-        function formatDate(date) {
-            return new Date(date).toLocaleDateString('id-ID', options);
+        function formatDate(dateString) {
+            const [datePart, timePart] = dateString.split(' ');
+            const [day, month, year] = datePart.split('/');
+            const [hour, minute, second] = timePart.split(':');
+            const date = new Date(year, month - 1, day, hour, minute, second);
+            return date.toLocaleDateString('id-ID', options);
         }
 
         fetch(sheetUrl)
@@ -173,7 +177,7 @@
                 });
 
                 // Update header
-                document.getElementById('creationDate').textContent = formatDate("2025-01-06").split(',')[0];
+                document.getElementById('creationDate').textContent = formatDate("05/01/2025 20:30:00").split(',')[1];
                 document.getElementById('currentFollower').textContent = lastRow[1];
                 document.getElementById('lastUpdate').textContent = formatDate(lastRow[0]);
 
@@ -206,7 +210,6 @@
                         datasets: [{
                             label: 'Jumlah Follower',
                             data: chartData,
-                            // borderColor: var(--primary-color),
                             tension: 0.4,
                             fill: true,
                             backgroundColor: 'rgba(42,42,114,0.1)'
