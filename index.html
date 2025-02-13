@@ -167,66 +167,81 @@
         }
 
         fetch(sheetUrl)
-            .then(response => response.text())
-            .then(data => {
-                const rows = data.split("\n").slice(1);
-                const lastRow = rows[rows.length - 1].split(',');
-                const historyData = rows.map(row => {
-                    const [datetime, follower] = row.split(',');
-                    return { datetime, follower: parseInt(follower) };
-                });
+    .then(response => response.text())
+    .then(data => {
+        const rows = data.split("\n").slice(1);
+        
+        // Membuat objek untuk menyimpan data terbaru di setiap tanggal
+        const latestDataByDate = {};
 
-                // Update header
-                document.getElementById('creationDate').textContent = formatDate("05/01/2025 20:30:00").split(',')[1];
-                document.getElementById('currentFollower').textContent = lastRow[1];
-                document.getElementById('lastUpdate').textContent = formatDate(lastRow[0]);
+        rows.forEach(row => {
+            const [datetime, follower] = row.split(',');
+            const date = datetime.split(' ')[0]; // Ambil hanya tanggalnya
+            const time = datetime.split(' ')[1]; // Ambil hanya waktunya
 
-                // Update table
-                const tableBody = document.getElementById('followerTableBody');
-                rows.slice(-10).reverse().forEach((row, index) => {
-                    const [datetime, follower] = row.split(',');
-                    const prevFollower = index < rows.length-1 ? rows[rows.length-index-2].split(',')[1] : 0;
-                    const change = follower - prevFollower;
-                    
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${datetime.split(' ')[0]}</td>
-                        <td>${datetime.split(' ')[1]}</td>
-                        <td>${follower}</td>
-                        <td class="${change >= 0 ? 'text-success' : 'text-danger'}">${change !== 0 ? (change > 0 ? '+' : '') + change : '-'}</td>
-                    `;
-                    tableBody.appendChild(tr);
-                });
+            // Jika tanggal belum ada di objek atau waktu lebih baru, simpan data ini
+            if (!latestDataByDate[date] || time > latestDataByDate[date].time) {
+                latestDataByDate[date] = { datetime, follower: parseInt(follower), time };
+            }
+        });
 
-                // Update chart
-                const chartData = historyData.slice(-7).map(d => d.follower);
-                const chartLabels = historyData.slice(-7).map(d => d.datetime.split(' ')[0]);
-                
-                if(trendChart) trendChart.destroy();
-                trendChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: chartLabels,
-                        datasets: [{
-                            label: 'Jumlah Follower',
-                            data: chartData,
-                            tension: 0.4,
-                            fill: true,
-                            backgroundColor: 'rgba(42,42,114,0.1)'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: { beginAtZero: false }
-                        }
-                    }
-                });
-            })
-            .catch(error => console.error('Error:', error));
+        // Konversi objek ke array dan urutkan berdasarkan tanggal
+        const historyData = Object.values(latestDataByDate).sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+
+        // Ambil data terbaru
+        const lastRow = historyData[historyData.length - 1];
+
+        // Update header
+        document.getElementById('creationDate').textContent = formatDate("05/01/2025 20:30:00").split(',')[1];
+        document.getElementById('currentFollower').textContent = lastRow.follower;
+        document.getElementById('lastUpdate').textContent = formatDate(lastRow.datetime);
+
+        // Update table
+        const tableBody = document.getElementById('followerTableBody');
+        historyData.slice(-10).reverse().forEach((row, index) => {
+            const [datetime, follower] = [row.datetime, row.follower];
+            const prevFollower = index < historyData.length-1 ? historyData[historyData.length-index-2].follower : 0;
+            const change = follower - prevFollower;
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${datetime.split(' ')[0]}</td>
+                <td>${datetime.split(' ')[1]}</td>
+                <td>${follower}</td>
+                <td class="${change >= 0 ? 'text-success' : 'text-danger'}">${change !== 0 ? (change > 0 ? '+' : '') + change : '-'}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        // Update chart
+        const chartData = historyData.slice(-7).map(d => d.follower);
+        const chartLabels = historyData.slice(-7).map(d => d.datetime.split(' ')[0]);
+        
+        if(trendChart) trendChart.destroy();
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Jumlah Follower',
+                    data: chartData,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(42,42,114,0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: false }
+                }
+            }
+        });
+    })
+    .catch(error => console.error('Error:', error));
     </script>
 </body>
 </html>
