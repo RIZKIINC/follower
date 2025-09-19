@@ -13,8 +13,6 @@
             --primary-color: #1A237E;
             --secondary-color: #00BFA5;
             --accent-color: #FF6D00;
-            --chart-color-1: #6366F1;
-            --chart-color-2: #10B981;
         }
         
         body {
@@ -22,14 +20,11 @@
             font-family: 'Inter', sans-serif;
             color: #2d3748;
         }
-        
-        #trendChart {
-            height: 400px !important;
-        }
 
-        #creationDate{
+        #creationDate {
             font-size: large;
         }
+
         .dashboard-header {
             background: linear-gradient(135deg, var(--primary-color), #0D47A1);
             color: white;
@@ -79,14 +74,6 @@
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-        }
-        
-        .chart-container {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin: 2rem 0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
         
         .data-table {
@@ -196,17 +183,6 @@
             </div>
         </div>
 
-        <!-- Analytics Chart -->
-        <div class="chart-container">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0 fw-600">7-Day Performance Trend</h5>
-                <div class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
-                    <i class="fas fa-sync-alt me-2"></i>Live Updates
-                </div>
-            </div>
-            <canvas id="trendChart"></canvas>
-        </div>
-
         <!-- Data Table -->
         <div class="mt-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -235,18 +211,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQnvshPns1RLV5ZrMwHDYC0tggADhTMv2w26ozqh54AVuhEjfFVTJAdzThtk2DhyR9HN-rw_rrJtUKx/pub?gid=0&single=true&output=csv";
         
-        const ctx = document.getElementById('trendChart').getContext('2d');
-        let trendChart;
-
-        // Warna chart
-        const rootStyles = getComputedStyle(document.documentElement);
-        const chartColor1 = rootStyles.getPropertyValue('--chart-color-1').trim();
-        const chartColor2 = rootStyles.getPropertyValue('--chart-color-2').trim();
-
         const options = { 
             weekday: 'long', 
             year: 'numeric', 
@@ -304,11 +271,9 @@
             const pagination = document.getElementById('pagination');
             pagination.innerHTML = "";
 
-            // Tentukan start & end range
             let startPage = Math.max(1, currentPage - 2);
             let endPage = Math.min(pageCount, currentPage + 2);
 
-            // Biar selalu 5 kalau bisa
             if (endPage - startPage < 4) {
                 if (startPage === 1) {
                     endPage = Math.min(5, pageCount);
@@ -317,7 +282,6 @@
                 }
             }
 
-            // Tombol Prev
             const prevLi = document.createElement('li');
             prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
             prevLi.innerHTML = `<a class="page-link" href="#">Prev</a>`;
@@ -331,7 +295,6 @@
             });
             pagination.appendChild(prevLi);
 
-            // Number pages
             for (let i = startPage; i <= endPage; i++) {
                 const li = document.createElement('li');
                 li.className = `page-item ${i === currentPage ? 'active' : ''}`;
@@ -345,7 +308,6 @@
                 pagination.appendChild(li);
             }
 
-            // Tombol Next
             const nextLi = document.createElement('li');
             nextLi.className = `page-item ${currentPage === pageCount ? 'disabled' : ''}`;
             nextLi.innerHTML = `<a class="page-link" href="#">Next</a>`;
@@ -359,7 +321,6 @@
             });
             pagination.appendChild(nextLi);
         }
-
 
         fetch(sheetUrl)
             .then(response => response.text())
@@ -386,73 +347,14 @@
                 historyData = Object.values(latestDataByDate).sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
                 const lastRow = historyData[historyData.length - 1];
 
-                // Update metrics
                 document.getElementById('creationDate').textContent = formatDate("05/01/2025 20:30:00").split(',')[1];
                 document.getElementById('currentFollower').textContent = lastRow.follower.toLocaleString();
                 document.getElementById('currentLike').textContent = lastRow.like.toLocaleString();
                 document.getElementById('totalVideo').textContent = lastRow.video.toLocaleString();
                 document.getElementById('lastUpdate').textContent = formatDate(lastRow.datetime);
 
-                // Render table & pagination
                 renderTablePage(historyData, currentPage);
                 renderPagination(historyData.length);
-
-                // Update chart
-                const chartDataFollower = historyData.slice(-7).map(d => d.follower);
-                const chartDataLike = historyData.slice(-7).map(d => d.like);
-                const chartLabels = historyData.slice(-7).map(d => d.datetime.split(' ')[0]);
-
-                if (trendChart) trendChart.destroy();
-                trendChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: chartLabels,
-                        datasets: [
-                            {
-                                label: 'Followers',
-                                data: chartDataFollower,
-                                tension: 0.4,
-                                borderColor: chartColor1,
-                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                                borderWidth: 2,
-                                pointRadius: 4,
-                                pointBackgroundColor: chartColor1
-                            },
-                            {
-                                label: 'Likes',
-                                data: chartDataLike,
-                                tension: 0.4,
-                                borderColor: chartColor2,
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                borderWidth: 2,
-                                pointRadius: 4,
-                                pointBackgroundColor: chartColor2
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    usePointStyle: true,
-                                    padding: 20
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                grid: { display: false }
-                            },
-                            y: {
-                                beginAtZero: false,
-                                grid: { color: '#e5e7eb' }
-                            }
-                        }
-                    }
-                });
             })
             .catch(error => console.error('Error:', error));
     </script>
